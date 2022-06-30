@@ -1,0 +1,6 @@
+env
+.env
+*.sqlite3
+**/__pycache__
+*.ods*
+selfstorage/management/commands/test.py
