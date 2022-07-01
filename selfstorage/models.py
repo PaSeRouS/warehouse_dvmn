@@ -11,7 +11,7 @@ class Warehouse(models.Model):
 
     address = models.TextField(
         'Адрес склада',
-        help_text='ул. Подольских курсантов д.5 кв.4'
+        help_text='г.Москва, ул.Подольских курсантов, д.5'
     )
 
     number_of_floors = models.IntegerField(
@@ -149,7 +149,7 @@ class Box(models.Model):
         blank=True)
 
     def __str__(self):
-        return f'{self.name}, {self.size}, {self.warehouse}'
+        return f'{self.name}, {self.size}, {self.warehouse.name}'
 
 
 class Size(models.Model):
