@@ -23,7 +23,10 @@ class CustomerAdmin(admin.ModelAdmin):
         CustomerBoxInline,
     ]
 
+@admin.register(Order)
+class OrderAdmin(admin.ModelAdmin):
+    readonly_fields = ['created_at']
+
 admin.site.register(Box)
-# admin.site.register(Customer)
-admin.site.register(Order)
+# admin.site.register(Order)
 admin.site.register(Size)
