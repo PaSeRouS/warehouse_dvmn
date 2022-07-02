@@ -42,23 +42,6 @@ class Order(models.Model):
         related_name='orders',
         on_delete=models.PROTECT)
 
-    size = models.ForeignKey(
-        'Size',
-        verbose_name='Объём бокса',
-        related_name='orders',
-        on_delete=models.PROTECT)
-
-    floor = models.IntegerField(
-        'Номер этажа склада',
-        help_text='3'
-    )
-
-    end_date = models.DateTimeField(
-        'Дата окончания хранения',
-        default=timezone.now,
-        db_index=True
-    )
-
     box = models.ForeignKey(
         'Box',
         verbose_name='Бокс',
@@ -76,6 +59,11 @@ class Order(models.Model):
         db_index=True, 
         default=False
     )
+
+    created_at = models.DateTimeField(
+        'Дата создания заказа',
+        default=timezone.now,
+        db_index=True)
 
     def __str__(self):
         return f'{self.customer}, {self.warehouse}'
@@ -98,11 +86,19 @@ class Customer(models.Model):
         'Отчество',
         max_length=20,
         db_index=True,
+        null=True,
         blank=True
     )
 
-    pure_phone = PhoneNumberField(
+    phone_number = PhoneNumberField(
         'Номер телефона'
+    )
+
+    e_mail = models.CharField(
+        'E-mail адрес',
+        max_length=30,
+        null=True,
+        blank=True
     )
 
     def __str__(self):
@@ -134,7 +130,7 @@ class Box(models.Model):
         'Номер этажа',
         help_text='3')
 
-    occupiid = models.BooleanField(
+    occupied = models.BooleanField(
         'Занят', 
         db_index=True, 
         default=False
@@ -147,6 +143,12 @@ class Box(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True)
+
+    end_date = models.DateField(
+        'Дата окончания хранения',
+        default=timezone.now,
+        db_index=True
+    )
 
     def __str__(self):
         return f'{self.name}, {self.size}, {self.warehouse.name}'
