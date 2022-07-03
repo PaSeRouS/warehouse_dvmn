@@ -4,3 +4,4 @@ env
 **/__pycache__
 *.ods*
 selfstorage/management/commands/test.py
+venv
