@@ -52,9 +52,9 @@ def get_customer(nickname: str):
     return customer
 
 
-def get_warehouse(name: str):
+def get_warehouse(address: str):
     warehouse = Warehouse.objects.get(
-        name=name
+        address=address
     )
 
     return warehouse
@@ -84,6 +84,12 @@ def get_free_boxes_from_warehouse(size: Size,
 
 def get_sizes():
     return Size.objects.all()
+
+
+def get_size(name: str):
+    return Size.objects.get(
+        name=name
+    )
 
 
 def get_customers_boxes(customer: Customer):
