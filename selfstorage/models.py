@@ -72,22 +72,26 @@ class Order(models.Model):
 class Customer(models.Model):
     last_name = models.CharField(
         'Фамилия',
-        max_length=20,
-        db_index=True
+        max_length=20
     )
     
     first_name = models.CharField(
         'Имя',
-        max_length=20,
-        db_index=True
+        max_length=20
     )
     
     patronymic = models.CharField(
         'Отчество',
         max_length=20,
-        db_index=True,
         null=True,
         blank=True
+    )
+
+    nickname = models.CharField(
+        'Никнейм в телеграме',
+        max_length=30,
+        db_index=True,
+        default='@WarehouseDevman_bot'
     )
 
     phone_number = PhoneNumberField(
