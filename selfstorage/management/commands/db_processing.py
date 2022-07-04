@@ -6,6 +6,7 @@ from selfstorage.models import Size, Warehouse
 
 def create_customer (first_name: str,
                      last_name: str,
+                     nickname: str,
                      phone_number: str,
                      patronymic='',
                      e_mail=''):
@@ -14,6 +15,7 @@ def create_customer (first_name: str,
         last_name=last_name,
         first_name=first_name,
         patronymic=patronymic,
+        nickname=nickname,
         phone_number=phone_number,
         e_mail=e_mail
     )
@@ -42,10 +44,9 @@ def create_order (customer: Customer,
     )
 
 
-def get_customer(first_name: str, last_name: str):
+def get_customer(nickname: str):
     customer = Customer.objects.get(
-        first_name=first_name,
-        last_name=last_name
+        nickname=nickname
     )
 
     return customer
