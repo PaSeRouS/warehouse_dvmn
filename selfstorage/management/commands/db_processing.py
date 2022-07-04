@@ -52,9 +52,9 @@ def get_customer(nickname: str):
     return customer
 
 
-def get_warehouse(name: str):
+def get_warehouse(address: str):
     warehouse = Warehouse.objects.get(
-        name=name
+        address=address
     )
 
     return warehouse
