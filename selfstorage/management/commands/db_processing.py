@@ -27,11 +27,15 @@ def create_order (customer: Customer,
                   box: Box,
                   price: int):
 
+    name = f'Заказ №{len(Order.objects.all()) + 1}'
+
     Order.objects.create(
+        name=name,
         customer=customer,
         warehouse=warehouse,
         box=box,
         price=price,
+        end_date=end_date,
         paid=True)
 
     Box.objects.filter(
@@ -102,3 +106,8 @@ def get_customers_orders(customer: Customer):
 
 def get_warehouses():
     return Warehouse.objects.all()
+
+def get_order(name: str):
+    return Order.objects.select_related('box').get(
+        name=name
+    )

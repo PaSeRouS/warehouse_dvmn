@@ -28,6 +28,13 @@ class Warehouse(models.Model):
 
 
 class Order(models.Model):
+    name = models.CharField(
+        'Название заказа',
+        max_length=20,
+        db_index=True,
+        default='Заказ без номера'
+    )
+
     customer = models.ForeignKey(
         'Customer',
         verbose_name='Покупатель',
@@ -58,6 +65,12 @@ class Order(models.Model):
         'Оплачен', 
         db_index=True, 
         default=False
+    )
+
+    end_date = models.DateField(
+        'Дата окончания хранения',
+        default=timezone.now,
+        db_index=True
     )
 
     created_at = models.DateTimeField(

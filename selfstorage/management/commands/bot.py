@@ -11,7 +11,8 @@ from telegram.ext import (CommandHandler, ConversationHandler, Filters,
 
 from .db_processing import (create_customer, create_order, get_box,
                             get_customer, get_free_boxes_from_warehouse,
-                            get_size, get_sizes, get_warehouse, get_warehouses)
+                            get_size, get_sizes, get_warehouse, get_warehouses,
+                            get_customers_orders, get_order)
 
 (
     FIRST_NAME,
@@ -27,7 +28,8 @@ from .db_processing import (create_customer, create_order, get_box,
     FREE_BOX,
     PAYMENT,
     STORAGE_PERIOD,
-    ) = range(13)
+    SHOW_ORDER,
+    ) = range(14)
 
 
 def start(update, context):
@@ -84,12 +86,33 @@ def check_exist_user_input(update, context):
         custom_keyboard = [[address] for address in warehouses_adresses]
         reply_markup = telegram.ReplyKeyboardMarkup(
             custom_keyboard,
+            resize_keyboard=True
         )
         update.message.reply_text(
                 'Выберите адрес склада',
                 reply_markup=reply_markup,
                 )
         return SIZE
+    elif 'Мои заказы' == user_input:
+        nickname = update.message.chat.username
+        customer = get_customer(nickname)
+        orders = get_customers_orders(customer)
+
+        if orders:
+            custom_keyboard = [[order.name] for order in orders]
+            custom_keyboard.append(['Вернуться в меню'])
+            reply_markup = telegram.ReplyKeyboardMarkup(
+                custom_keyboard,
+                resize_keyboard=True
+                )
+            update.message.reply_text(
+                'Ваши заказы',
+                reply_markup=reply_markup,
+                )
+            return SHOW_ORDER
+        else:
+            update.message.reply_text('У вас пока нет заказов')
+
 
 
 def size(update, context):
@@ -99,6 +122,7 @@ def size(update, context):
     custom_keyboard = [[size.name] for size in sizes]
     reply_markup = telegram.ReplyKeyboardMarkup(
         custom_keyboard,
+        resize_keyboard=True
     )
     update.message.reply_text(
             'Выберите размер бокса',
@@ -115,6 +139,7 @@ def floor(update, context):
         ]
     reply_markup = telegram.ReplyKeyboardMarkup(
         custom_keyboard,
+        resize_keyboard=True
     )
     update.message.reply_text(
             'Выберите этаж',
@@ -133,6 +158,7 @@ def free_box(update, context):
     custom_keyboard = [[box.name] for box in free_boxes]
     reply_markup = telegram.ReplyKeyboardMarkup(
         custom_keyboard,
+        resize_keyboard=True
     )
     update.message.reply_text(
             'Мы можем предложить вам следующие боксы',
@@ -160,7 +186,7 @@ def pay_process(update, context):
     storage_period = update.message.text
     end_date = date.today() + relativedelta(months=+int(storage_period))
     context.user_data['end_date'] = end_date
-    context.user_data['price'] = 199*int(storage_period)
+    context.user_data['price'] = 199
 
     chat_id = update.message.chat_id
     title = "Оплата заказа"
@@ -253,6 +279,50 @@ def finish_registration(update, context):
     return CHECK_CHOICE_EXIST_USER
 
 
+def show_order(update, context):
+    user_input = update.message.text
+    if user_input == 'Вернуться в меню':
+        reply_markup = get_menu_markup()
+
+        update.message.reply_text(
+            'Главное меню',
+            reply_markup=reply_markup,
+        )
+
+        return CHECK_CHOICE_EXIST_USER
+    else:
+        nickname = update.message.chat.username
+        customer = get_customer(nickname)
+        orders = get_customers_orders(customer)
+
+        custom_keyboard = []
+
+        for order in orders:
+            if order.name != user_input:
+                custom_keyboard.append([order.name])
+
+        custom_keyboard.append(['Вернуться в меню'])
+        customer_order = get_order(user_input)
+
+        order_info = f'{user_input}\n'
+        order_info += f'Склад: {customer_order.warehouse}\n'
+        order_info += f'Имя: {customer_order.box.name}\n'
+        order_info += f'Размер: {customer_order.box.size}\n'
+        order_info += f'Этаж: {customer_order.box.floor}\n'
+        order_info += f'Срок хранения: {customer_order.end_date}\n'
+        order_info += f'Стоимость: {customer_order.price}₽'
+
+        reply_markup = telegram.ReplyKeyboardMarkup(
+            custom_keyboard,
+            resize_keyboard=True
+        )
+        update.message.reply_text(
+            order_info,
+            reply_markup=reply_markup,
+        )
+        return SHOW_ORDER
+
+
 def get_menu_markup():
     custom_keyboard = [
         ['Заказать бокс'],
@@ -336,7 +406,11 @@ class Command(BaseCommand):
                 FINISH_REGISTRATION: [MessageHandler(
                     Filters.text & (~ Filters.command),
                     finish_registration,
-                    )]
+                    )],
+                SHOW_ORDER: [MessageHandler(
+                    Filters.text & (~ Filters.command),
+                    show_order,
+                    )],
             },
             fallbacks=[CommandHandler('stop', stop)],
         )
