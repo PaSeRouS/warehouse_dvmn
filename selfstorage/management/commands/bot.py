@@ -30,13 +30,7 @@ from .db_processing import (create_customer, create_order, get_box,
 
 
 def start(update, context):
-    custom_keyboard = [
-        ['Заказать бокс'],
-        ['Мои заказы'],
-        ]
-    reply_markup = telegram.ReplyKeyboardMarkup(
-        custom_keyboard
-        )
+    reply_markup = get_menu_markup()
     start_message_new_user = 'Здравствуйте! '\
         'Я бот компании Сервис SelfStorage!\n'\
         'У нас вы можете разместить '\
@@ -65,7 +59,7 @@ def start(update, context):
 
 def check_new_user_input(update, context):
     user_input = update.message.text
-    if 'Да'.lower() == user_input:
+    if 'Да'.lower() == user_input.lower():
         update.message.reply_text(
             'Укажите свой email',
             reply_markup=telegram.ReplyKeyboardRemove(),
@@ -172,6 +166,7 @@ def order(update, context):
         context.user_data['box'],
         price,
         )
+    reply_markup = get_menu_markup()
     update.message.reply_text(
         'Благодарим вас за заказ! Привозите свои вещи по адресу: {}\n'
         'Этаж № {}\n{}\n'
@@ -180,9 +175,10 @@ def order(update, context):
             context.user_data['floor'],
             context.user_data['box'].name,
             end_date,
-            )
+            ),
+        reply_markup=reply_markup,
         )
-    return ConversationHandler.END
+    return CHECK_CHOICE_EXIST_USER
 
 
 def phone(update, context):
@@ -211,7 +207,6 @@ def patronic(update, context):
 
 def finish_registration(update, context):
     context.user_data['patronic'] = update.message.text
-    update.message.reply_text('Регистрация успешно завершена!')
     nickname = update.message.chat.username
     create_customer(context.user_data['first_name'],
                     context.user_data['last_name'],
@@ -219,7 +214,24 @@ def finish_registration(update, context):
                     context.user_data['phone'],
                     patronymic=context.user_data['patronic'],
                     e_mail=context.user_data['email'])
-    return ConversationHandler.END
+    reply_markup = get_menu_markup()
+    update.message.reply_text(
+            'Регистрация успешно завершена!',
+            reply_markup=reply_markup,
+            )
+    return CHECK_CHOICE_EXIST_USER
+
+
+def get_menu_markup():
+    custom_keyboard = [
+        ['Заказать бокс'],
+        ['Мои заказы'],
+        ]
+    reply_markup = telegram.ReplyKeyboardMarkup(
+        keyboard=custom_keyboard,
+        resize_keyboard=True,
+        )
+    return reply_markup
 
 
 def stop(update, context):
