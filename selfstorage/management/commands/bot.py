@@ -5,8 +5,9 @@ from dateutil.relativedelta import relativedelta
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.management.base import BaseCommand
 from environs import Env
+from telegram import LabeledPrice
 from telegram.ext import (CommandHandler, ConversationHandler, Filters,
-                          MessageHandler, Updater)
+                          MessageHandler, PreCheckoutQueryHandler, Updater)
 
 from .db_processing import (create_customer, create_order, get_box,
                             get_customer, get_free_boxes_from_warehouse,
@@ -24,7 +25,7 @@ from .db_processing import (create_customer, create_order, get_box,
     SIZE,
     FLOOR,
     FREE_BOX,
-    ORDER,
+    PAYMENT,
     STORAGE_PERIOD,
     ) = range(13)
 
@@ -149,22 +150,52 @@ def storage_period(update, context):
             'Укажите срок хранения в месяцах',
             reply_markup=telegram.ReplyKeyboardRemove(),
             )
-    return ORDER
+    return PAYMENT
+
+
+def pay_process(update, context):
+    env = Env()
+    env.read_env()
+
+    storage_period = update.message.text
+    end_date = date.today() + relativedelta(months=+int(storage_period))
+    context.user_data['end_date'] = end_date
+    context.user_data['price'] = 199*int(storage_period)
+
+    chat_id = update.message.chat_id
+    title = "Оплата заказа"
+    description = "Оплата заказа бокса на хранение"
+    payload = "Custom-Payload"
+    provider_token = env.str('PAYMENTS_PROVIDER_TOKEN')
+    currency = "rub"
+    price = context.user_data['price']
+    prices = [LabeledPrice("Подписка на FoodPlan", price * 100)]
+
+
+    context.bot.send_invoice(
+        chat_id, title, description, payload, provider_token, currency, prices
+    )
+
+    return CHECK_CHOICE_EXIST_USER
+
+
+def precheckout_callback(update, context) -> None:
+    query = update.pre_checkout_query
+    if query.invoice_payload != 'Custom-Payload':
+        query.answer(ok=False, error_message="Что-то пошло не так...")
+    else:
+        query.answer(ok=True)
 
 
 def order(update, context):
     nickname = update.message.chat.username
     customer = get_customer(nickname)
-    storage_period = update.message.text
-    end_date = date.today() + relativedelta(months=+int(storage_period))
-    context.user_data['end_date'] = end_date
-    price = 199
     create_order(
         customer,
         context.user_data['warehouse'],
-        end_date,
+        context.user_data['end_date'],
         context.user_data['box'],
-        price,
+        context.user_data['price'],
         )
     reply_markup = get_menu_markup()
     update.message.reply_text(
@@ -174,7 +205,7 @@ def order(update, context):
             context.user_data['warehouse'].address,
             context.user_data['floor'],
             context.user_data['box'].name,
-            end_date,
+            context.user_data['end_date'],
             ),
         reply_markup=reply_markup,
         )
@@ -294,9 +325,9 @@ class Command(BaseCommand):
                     Filters.text & (~ Filters.command),
                     free_box,
                     )],
-                ORDER: [MessageHandler(
+                PAYMENT: [MessageHandler(
                     Filters.text & (~ Filters.command),
-                    order,
+                    pay_process,
                     )],
                 STORAGE_PERIOD: [MessageHandler(
                     Filters.text & (~ Filters.command),
@@ -310,5 +341,7 @@ class Command(BaseCommand):
             fallbacks=[CommandHandler('stop', stop)],
         )
         dispatcher.add_handler(conv_handler)
+        dispatcher.add_handler(PreCheckoutQueryHandler(precheckout_callback))
+        dispatcher.add_handler(MessageHandler(Filters.successful_payment, order))
         updater.start_polling()
         updater.idle()
