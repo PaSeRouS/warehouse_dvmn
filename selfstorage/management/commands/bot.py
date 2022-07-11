@@ -195,7 +195,7 @@ def pay_process(update, context):
     provider_token = env.str('PAYMENTS_PROVIDER_TOKEN')
     currency = "rub"
     price = context.user_data['price']
-    prices = [LabeledPrice("Подписка на FoodPlan", price * 100)]
+    prices = [LabeledPrice("Оплата", price * 100)]
 
 
     context.bot.send_invoice(
